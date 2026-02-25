@@ -1,4 +1,4 @@
-# Lineup Maker (축구 동아리 라인업 자동 생성기)
+# Lineup Maker (축구 라인업 자동 생성기)
 
 Lineup Maker is a mobile-friendly web application designed to automate and simplify squad allocation for soccer clubs. By automatically distributing players fairly across quarters and allowing intuitive drag-and-drop manual adjustments, organizers can ensure everyone gets equitable playtime without the hassle.
 
