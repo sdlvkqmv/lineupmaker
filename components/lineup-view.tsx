@@ -103,7 +103,7 @@ function PitchPlayer({ starter, positionIndex, player, playCount }: any) {
       >
         <div className={`relative flex size-9 items-center justify-center rounded-full text-xs font-bold shadow-md ${getPositionBgColor(starter.position.role)} text-card`}>
           {player.number ?? player.name.charAt(0)}
-          <div className={`absolute -bottom-0.5 -right-0.5 flex size-3.5 items-center justify-center rounded-full border border-pitch text-[8px] font-extrabold text-white ${player.skill_level === "High" ? "bg-skill-high" : player.skill_level === "Medium" ? "bg-skill-medium" : "bg-skill-low"
+          <div className={`absolute -bottom-0.5 -right-0.5 flex size-3.5 items-center justify-center rounded-full border border-pitch text-[8px] font-extrabold text-black ${player.skill_level === "High" ? "bg-skill-high" : player.skill_level === "Medium" ? "bg-skill-medium" : "bg-skill-low"
             }`}>
             {player.skill_level === "High" ? "상" : player.skill_level === "Medium" ? "중" : "하"}
           </div>
@@ -143,7 +143,7 @@ function SubPlayer({ subId, player, playCount }: any) {
         variant="secondary"
         className={`gap-1 py-1 pl-1 pr-2 text-xs touch-pan-y cursor-grab active:cursor-grabbing ${isDragging ? "opacity-0" : ""}`}
       >
-        <span className={`flex size-4 items-center justify-center rounded-full text-[9px] font-bold text-white ${player.skill_level === "High" ? "bg-skill-high" : player.skill_level === "Medium" ? "bg-skill-medium" : "bg-skill-low"
+        <span className={`flex size-4 items-center justify-center rounded-full text-[9px] font-bold text-black ${player.skill_level === "High" ? "bg-skill-high" : player.skill_level === "Medium" ? "bg-skill-medium" : "bg-skill-low"
           }`}>
           {player.skill_level === "High" ? "상" : player.skill_level === "Medium" ? "중" : "하"}
         </span>
@@ -322,7 +322,7 @@ export function LineupView() {
           <div className="flex flex-col items-center gap-0.5 opacity-80 cursor-grabbing scale-110 transition-transform">
             <div className={`relative flex size-9 items-center justify-center rounded-full text-xs font-bold shadow-md ${getPositionBgColor(activeDrag.role)} text-card`}>
               {activeDrag.player.number ?? activeDrag.player.name.charAt(0)}
-              <div className={`absolute -bottom-0.5 -right-0.5 flex size-3.5 items-center justify-center rounded-full border border-pitch text-[8px] font-extrabold text-white ${activeDrag.player.skill_level === "High" ? "bg-skill-high" : activeDrag.player.skill_level === "Medium" ? "bg-skill-medium" : "bg-skill-low"
+              <div className={`absolute -bottom-0.5 -right-0.5 flex size-3.5 items-center justify-center rounded-full border border-pitch text-[8px] font-extrabold text-black ${activeDrag.player.skill_level === "High" ? "bg-skill-high" : activeDrag.player.skill_level === "Medium" ? "bg-skill-medium" : "bg-skill-low"
                 }`}>
                 {activeDrag.player.skill_level === "High" ? "상" : activeDrag.player.skill_level === "Medium" ? "중" : "하"}
               </div>
@@ -337,7 +337,7 @@ export function LineupView() {
           </div>
         ) : activeDrag?.type === "sub" ? (
           <Badge variant="secondary" className="gap-1 py-1 pl-1 pr-2 text-xs opacity-80 cursor-grabbing scale-105 transition-transform">
-            <span className={`flex size-4 items-center justify-center rounded-full text-[9px] font-bold text-white ${activeDrag.player.skill_level === "High" ? "bg-skill-high" : activeDrag.player.skill_level === "Medium" ? "bg-skill-medium" : "bg-skill-low"
+            <span className={`flex size-4 items-center justify-center rounded-full text-[9px] font-bold text-black ${activeDrag.player.skill_level === "High" ? "bg-skill-high" : activeDrag.player.skill_level === "Medium" ? "bg-skill-medium" : "bg-skill-low"
               }`}>
               {activeDrag.player.skill_level === "High" ? "상" : activeDrag.player.skill_level === "Medium" ? "중" : "하"}
             </span>
