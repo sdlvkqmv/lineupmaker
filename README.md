@@ -4,7 +4,7 @@ Lineup Maker is a mobile-friendly web application designed to automate and simpl
 
 ## Features
 
-- **CSV Roster Upload**: Easily import players using `2026명단.csv` formats (powered by PapaParse).
+- **CSV Roster Upload**: Easily import players using `sample.csv` formats (powered by PapaParse).
 - **Quarter Availability**: Players can selectively declare which quarters (1Q ~ 4Q) they are available for.
 - **Fair Auto-Generation Algorithm**:
   - Distributes total play counts fairly to minimize the difference in playtime (max difference of 1).
