@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useReducer, type ReactNode } from "react";
+import { createContext, useContext, useReducer, useEffect, type ReactNode } from "react";
 import type {
   Player,
   FormationType,
@@ -34,6 +34,7 @@ type LineupAction =
   | { type: "SET_QUARTER_LINEUPS"; lineups: QuarterLineup[] }
   | { type: "SET_STEP"; step: number }
   | { type: "SET_SELECTED_QUARTER"; quarter: number }
+  | { type: "LOAD_STATE"; state: LineupState }
   | {
     type: "SWAP_PLAYER";
     quarter: number;
@@ -315,6 +316,9 @@ function lineupReducer(
       newLineups[action.quarter] = ql;
       return { ...state, quarterLineups: newLineups };
     }
+    case "LOAD_STATE": {
+      return action.state;
+    }
     default:
       return state;
   }
@@ -325,8 +329,32 @@ const LineupContext = createContext<{
   dispatch: React.Dispatch<LineupAction>;
 } | null>(null);
 
+const LOCAL_STORAGE_KEY = "lineupmaker_state";
+
 export function LineupProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(lineupReducer, initialState);
+
+  // Load from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (saved) {
+        dispatch({ type: "LOAD_STATE", state: JSON.parse(saved) });
+      }
+    } catch (e) {
+      console.error("Failed to load state from localStorage", e);
+    }
+  }, []);
+
+  // Save to localStorage whenever state changes
+  useEffect(() => {
+    try {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(state));
+    } catch (e) {
+      console.error("Failed to save state to localStorage", e);
+    }
+  }, [state]);
+
   return (
     <LineupContext.Provider value={{ state, dispatch }}>
       {children}

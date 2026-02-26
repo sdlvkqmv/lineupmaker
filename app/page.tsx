@@ -8,8 +8,17 @@ import { FormationSelector } from "@/components/formation-selector";
 import { LineupView } from "@/components/lineup-view";
 import { ShareView } from "@/components/share-view";
 
+import { useState, useEffect } from "react";
+
 function AppContent() {
   const { state } = useLineup();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
 
   return (
     <div className="flex h-dvh flex-col bg-background">
