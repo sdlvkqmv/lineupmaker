@@ -40,9 +40,9 @@
 
   --pitch: oklch(0.38 0.08 145);
   --pitch-line: oklch(0.96 0.005 100 / 0.35);
-  --skill-high: #ef4444;
+  --skill-high: #3b82f6;
   --skill-medium: #eab308;
-  --skill-low: #22c55e;
+  --skill-low: #ef4444;
 }
 
 @theme inline {

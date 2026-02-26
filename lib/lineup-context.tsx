@@ -24,6 +24,7 @@ type LineupAction =
   | { type: "UPDATE_PLAYER"; id: string; updates: Partial<Player> }
   | { type: "REMOVE_PLAYER"; id: string }
   | { type: "TOGGLE_ATTENDANCE"; id: string }
+  | { type: "CLEAR_ATTENDANCE" }
   | {
     type: "TOGGLE_QUARTER";
     id: string;

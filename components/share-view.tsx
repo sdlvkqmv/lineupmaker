@@ -3,247 +3,124 @@
 import { useRef, useCallback, useState } from "react";
 import { useLineup } from "@/lib/lineup-context";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-  ChevronLeft,
-  Copy,
-  Share,
-  Download,
-  Check,
-} from "lucide-react";
+import { ChevronLeft, Download } from "lucide-react";
+import { toPng } from "html-to-image";
+import { PitchSVG, getPositionBgColor } from "./lineup-view";
 
 const QUARTER_LABELS = ["1Q", "2Q", "3Q", "4Q"];
 
+function StaticPitchPlayer({ starter, player, playCount }: any) {
+  return (
+    <div
+      className="absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-0.5"
+      style={{ left: `${starter.position.x}%`, top: `${starter.position.y}%` }}
+    >
+      <div className={`relative flex size-9 items-center justify-center rounded-full text-xs font-bold shadow-md ${getPositionBgColor(starter.position.role)} text-card`}>
+        {player.number ?? player.name.charAt(0)}
+        <div className={`absolute -bottom-0.5 -right-0.5 flex size-3.5 items-center justify-center rounded-full border border-pitch text-[8px] font-extrabold text-black ${player.skill_level === "High" ? "bg-skill-high" : player.skill_level === "Medium" ? "bg-skill-medium" : "bg-skill-low"
+          }`}>
+          {player.skill_level === "High" ? "상" : player.skill_level === "Medium" ? "중" : "하"}
+        </div>
+        <div className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full border border-pitch bg-foreground px-1 text-[9px] font-black text-background shadow-sm">
+          {playCount}Q
+        </div>
+      </div>
+      <span className="max-w-16 truncate rounded-sm bg-background/80 px-1 text-[10px] font-semibold text-foreground backdrop-blur-sm">
+        {player.name}
+      </span>
+      <span className="text-[9px] font-medium text-foreground/70">
+        {starter.position.role}
+      </span>
+    </div>
+  );
+}
+
 export function ShareView() {
   const { state, dispatch } = useLineup();
-  const textRef = useRef<HTMLDivElement>(null);
-  const [copied, setCopied] = useState(false);
+  const pitchRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const [downloading, setDownloading] = useState<number | null>(null);
 
   function getPlayerById(id: string) {
     return state.players.find((p) => p.id === id);
   }
 
-  const generateText = useCallback(() => {
-    let text = `[${state.formation} 라인업]\n\n`;
+  function getPlayerPlayCount(id: string) {
+    return state.quarterLineups.reduce(
+      (count, ql) => count + (ql.starters.some((s) => s.playerId === id) ? 1 : 0),
+      0
+    );
+  }
 
-    state.quarterLineups.forEach((ql, qi) => {
-      text += `--- ${QUARTER_LABELS[qi]} ---\n`;
-      ql.starters.forEach((s) => {
-        const player = getPlayerById(s.playerId);
-        if (player) {
-          text += `${s.position.role}: ${player.name}${
-            player.number ? ` (#${player.number})` : ""
-          }\n`;
-        }
-      });
-      if (ql.subs.length > 0) {
-        text += `SUB: ${ql.subs
-          .map((id) => getPlayerById(id)?.name)
-          .filter(Boolean)
-          .join(", ")}\n`;
-      }
-      text += "\n";
-    });
+  const handleDownloadImage = useCallback(async (qi: number) => {
+    const node = pitchRefs.current[qi];
+    if (!node) return;
 
-    return text;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.quarterLineups, state.formation, state.players]);
-
-  async function handleCopy() {
-    const text = generateText();
+    setDownloading(qi);
     try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Fallback
-      const textarea = document.createElement("textarea");
-      textarea.value = text;
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand("copy");
-      document.body.removeChild(textarea);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      const dataUrl = await toPng(node, { cacheBust: true, pixelRatio: 3 });
+      const link = document.createElement("a");
+      link.download = `lineup-${state.formation}-${QUARTER_LABELS[qi]}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error("Failed to generate image", err);
+    } finally {
+      setDownloading(null);
     }
-  }
-
-  async function handleShare() {
-    const text = generateText();
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: `${state.formation} 라인업`, text });
-      } catch {
-        // User cancelled
-      }
-    } else {
-      handleCopy();
-    }
-  }
-
-  async function handleDownloadImage() {
-    if (!textRef.current) return;
-    
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const padding = 40;
-    const lineHeight = 28;
-    const text = generateText();
-    const lines = text.split("\n");
-    
-    canvas.width = 600;
-    canvas.height = padding * 2 + lines.length * lineHeight + 40;
-
-    // Background
-    ctx.fillStyle = "#1a2e1a";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Title bar
-    ctx.fillStyle = "#243d24";
-    ctx.fillRect(0, 0, canvas.width, 60);
-    ctx.fillStyle = "#5ac05a";
-    ctx.font = "bold 20px sans-serif";
-    ctx.fillText(`LINEUP MAKER`, padding, 38);
-
-    // Text content
-    ctx.font = "15px sans-serif";
-    let y = 80 + padding;
-    lines.forEach((line) => {
-      if (line.startsWith("---")) {
-        ctx.fillStyle = "#5ac05a";
-        ctx.font = "bold 16px sans-serif";
-      } else if (line.startsWith("SUB:")) {
-        ctx.fillStyle = "#8a8a70";
-        ctx.font = "14px sans-serif";
-      } else if (line.startsWith("[")) {
-        ctx.fillStyle = "#e8e8d0";
-        ctx.font = "bold 18px sans-serif";
-      } else {
-        ctx.fillStyle = "#c8c8b0";
-        ctx.font = "15px sans-serif";
-      }
-      ctx.fillText(line, padding, y);
-      y += lineHeight;
-    });
-
-    const link = document.createElement("a");
-    link.download = `lineup-${state.formation}.png`;
-    link.href = canvas.toDataURL("image/png");
-    link.click();
-  }
+  }, [state.formation]);
 
   return (
     <div className="flex flex-1 flex-col">
       {/* Header */}
-      <div className="flex items-center gap-2 px-4 py-3">
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
         <button
-          onClick={() => dispatch({ type: "SET_STEP", step: 2 })}
+          onClick={() => dispatch({ type: "SET_STEP", step: 3 })}
           className="flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground"
           aria-label="이전으로"
         >
           <ChevronLeft className="size-5" />
         </button>
         <div>
-          <h2 className="text-lg font-bold text-foreground">라인업 공유</h2>
-          <p className="text-xs text-muted-foreground">{state.formation}</p>
+          <h2 className="text-lg font-bold text-foreground">이미지 저장</h2>
+          <p className="text-xs text-muted-foreground">{state.formation} 라인업</p>
         </div>
       </div>
 
-      {/* Preview */}
-      <div className="flex-1 overflow-auto px-4">
-        <div
-          ref={textRef}
-          className="rounded-xl border border-border bg-card p-4"
-        >
-          <div className="mb-3 flex items-center gap-2">
-            <div className="size-2 rounded-full bg-primary" />
-            <span className="text-sm font-bold text-foreground">
-              {state.formation} 라인업
-            </span>
-          </div>
-
-          {state.quarterLineups.map((ql, qi) => (
-            <div key={qi} className="mb-4">
-              <div className="mb-2 flex items-center gap-2">
-                <Badge className="bg-primary/15 text-primary border-0 text-xs font-bold">
-                  {QUARTER_LABELS[qi]}
-                </Badge>
-              </div>
-              <div className="flex flex-col gap-1 pl-1">
-                {ql.starters.map((s, si) => {
-                  const player = getPlayerById(s.playerId);
-                  if (!player) return null;
-                  return (
-                    <div key={si} className="flex items-center gap-2 text-xs">
-                      <span className="w-8 font-mono font-bold text-muted-foreground">
-                        {s.position.role}
-                      </span>
-                      <span className="text-foreground">{player.name}</span>
-                      {player.number !== undefined && (
-                        <span className="text-muted-foreground">
-                          #{player.number}
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
-                {ql.subs.length > 0 && (
-                  <div className="mt-1 flex items-start gap-2 text-xs">
-                    <span className="w-8 font-mono font-bold text-muted-foreground">
-                      SUB
-                    </span>
-                    <span className="text-muted-foreground">
-                      {ql.subs
-                        .map((id) => getPlayerById(id)?.name)
-                        .filter(Boolean)
-                        .join(", ")}
-                    </span>
-                  </div>
-                )}
-              </div>
+      <div className="flex-1 overflow-auto p-4 flex flex-col gap-6 items-center">
+        {state.quarterLineups.map((ql, qi) => (
+          <div key={qi} className="w-full max-w-sm flex flex-col gap-2">
+            <div className="flex items-center justify-between px-1">
+              <span className="text-lg font-bold">{QUARTER_LABELS[qi]}</span>
+              <Button
+                size="sm"
+                variant="default"
+                disabled={downloading === qi}
+                onClick={() => handleDownloadImage(qi)}
+              >
+                {downloading === qi ? "저장 중..." : <><Download className="mr-1 size-3.5" /> 저장</>}
+              </Button>
             </div>
-          ))}
-        </div>
-      </div>
 
-      {/* Share Actions */}
-      <div className="flex flex-col gap-2 border-t border-border p-4">
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            className="flex-1 gap-2"
-            onClick={handleCopy}
-          >
-            {copied ? (
-              <>
-                <Check className="size-4 text-primary" />
-                복사됨
-              </>
-            ) : (
-              <>
-                <Copy className="size-4" />
-                텍스트 복사
-              </>
-            )}
-          </Button>
-          <Button
-            variant="outline"
-            className="flex-1 gap-2"
-            onClick={handleDownloadImage}
-          >
-            <Download className="size-4" />
-            이미지 저장
-          </Button>
-        </div>
-        <Button
-          className="w-full gap-2 bg-primary text-primary-foreground"
-          onClick={handleShare}
-        >
-          <Share className="size-4" />
-          공유하기
-        </Button>
+            <div
+              ref={(el) => {
+                pitchRefs.current[qi] = el;
+              }}
+              className="relative aspect-[68/100] w-full overflow-hidden rounded-xl border border-pitch-line bg-pitch shadow-lg"
+            >
+              <PitchSVG />
+              <div className="absolute left-3 top-2 opacity-70">
+                <div className="text-xl font-black italic text-white">{QUARTER_LABELS[qi]}</div>
+                <div className="text-xs font-semibold text-white/80">{state.formation}</div>
+              </div>
+
+              {ql.starters.map((starter, idx) => {
+                const player = getPlayerById(starter.playerId);
+                if (!player) return null;
+                return <StaticPitchPlayer key={`${qi}-${idx}`} starter={starter} player={player} playCount={getPlayerPlayCount(player.id)} />;
+              })}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

@@ -21,7 +21,7 @@ import {
 
 const QUARTER_LABELS = ["1Q", "2Q", "3Q", "4Q"];
 
-function PitchSVG() {
+export function PitchSVG() {
   return (
     <svg
       viewBox="0 0 340 500"
@@ -63,7 +63,7 @@ function PitchSVG() {
   );
 }
 
-function getPositionBgColor(role: string) {
+export function getPositionBgColor(role: string) {
   const cat = getPositionCategory(role as any);
   switch (cat) {
     case "GK":

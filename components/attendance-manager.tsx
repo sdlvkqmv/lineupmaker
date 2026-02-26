@@ -79,15 +79,29 @@ export function AttendanceManager() {
             참석 {attending.length}명 / 전체 {state.players.length}명
           </p>
         </div>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => setMercenaryDialogOpen(true)}
-          className="gap-1.5"
-        >
-          <UserPlus className="size-3.5" />
-          용병
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            className="text-muted-foreground"
+            onClick={() => {
+              if (confirm("정말로 모든 참석자를 지우시겠습니까? (용병 포함)")) {
+                dispatch({ type: "CLEAR_ATTENDANCE" });
+              }
+            }}
+          >
+            모두 지우기
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setMercenaryDialogOpen(true)}
+            className="gap-1.5"
+          >
+            <UserPlus className="size-3.5" />
+            용병
+          </Button>
+        </div>
       </div>
 
       {/* Quarter Summary */}

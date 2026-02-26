@@ -35,7 +35,7 @@ function generateId() {
   return Math.random().toString(36).substring(2, 9);
 }
 
-function SkillBadge({ level }: { level: SkillLevel }) {
+function SkillBadge({ level, onClick }: { level: SkillLevel; onClick?: () => void }) {
   const map: Record<SkillLevel, { label: string; className: string }> = {
     High: { label: "상", className: "bg-skill-high/20 text-skill-high border-skill-high/30" },
     Medium: { label: "중", className: "bg-skill-medium/20 text-skill-medium border-skill-medium/30" },
@@ -43,7 +43,11 @@ function SkillBadge({ level }: { level: SkillLevel }) {
   };
   const config = map[level];
   return (
-    <Badge variant="outline" className={config.className}>
+    <Badge
+      variant="outline"
+      className={`${config.className} ${onClick ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
+      onClick={onClick}
+    >
       {config.label}
     </Badge>
   );
@@ -412,7 +416,21 @@ export function RosterManager() {
                     )}
                   </div>
                 </div>
-                <SkillBadge level={player.skill_level} />
+                <SkillBadge
+                  level={player.skill_level}
+                  onClick={() => {
+                    const nextSkill: Record<SkillLevel, SkillLevel> = {
+                      High: "Medium",
+                      Medium: "Low",
+                      Low: "High"
+                    };
+                    dispatch({
+                      type: "UPDATE_PLAYER",
+                      id: player.id,
+                      updates: { skill_level: nextSkill[player.skill_level] }
+                    });
+                  }}
+                />
                 <div className="flex gap-1">
                   <button
                     onClick={() => {
