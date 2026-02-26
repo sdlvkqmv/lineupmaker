@@ -221,6 +221,14 @@ function lineupReducer(
         ...state,
         players: state.players.filter((p) => p.id !== action.id),
       };
+    case "CLEAR_ATTENDANCE": {
+      const newPlayers = state.players.map((p) => ({
+        ...p,
+        is_attending: false,
+        available_quarters: [false, false, false, false] as [boolean, boolean, boolean, boolean],
+      }));
+      return { ...state, players: newPlayers };
+    }
     case "TOGGLE_ATTENDANCE": {
       const player = state.players.find((p) => p.id === action.id);
       if (!player) return state;
