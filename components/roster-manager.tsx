@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
 import Papa from "papaparse";
 import { useLineup } from "@/lib/lineup-context";
 import type { Player, Position, SkillLevel } from "@/lib/types";
@@ -29,7 +29,10 @@ import {
   Pencil,
   Trash2,
   UserPlus,
+  Search,
+  ArrowUpDown
 } from "lucide-react";
+import { getChoseong } from "es-hangul";
 
 function generateId() {
   return Math.random().toString(36).substring(2, 9);
@@ -210,6 +213,49 @@ export function RosterManager() {
   const [editingPlayer, setEditingPlayer] = useState<Partial<Player> | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortType, setSortType] = useState<"name" | "number" | "position" | "skill">("number");
+
+  const filteredAndSortedPlayers = useMemo(() => {
+    let result = [...state.players];
+
+    // 1. Search (Choseong Support)
+    if (searchTerm) {
+      result = result.filter(p => {
+        const nameMatch = p.name.includes(searchTerm) || getChoseong(p.name).includes(searchTerm);
+        const numMatch = p.number?.toString().includes(searchTerm);
+        return nameMatch || numMatch;
+      });
+    }
+
+    // 2. Sort
+    result.sort((a, b) => {
+      // 용병은 항상 마지막
+      if (a.is_mercenary !== b.is_mercenary) {
+        return a.is_mercenary ? 1 : -1;
+      }
+
+      switch (sortType) {
+        case "name":
+          return a.name.localeCompare(b.name);
+        case "number":
+          const numA = a.number ?? 999;
+          const numB = b.number ?? 999;
+          return numA - numB;
+        case "position":
+          return a.main_pos.localeCompare(b.main_pos);
+        case "skill": {
+          const scoreMap: Record<SkillLevel, number> = { High: 3, Medium: 2, Low: 1 };
+          return scoreMap[b.skill_level] - scoreMap[a.skill_level];
+        }
+        default:
+          return 0;
+      }
+    });
+
+    return result;
+  }, [state.players, searchTerm, sortType]);
+
   function handleCSVUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -346,6 +392,35 @@ export function RosterManager() {
         </div>
       </div>
 
+      {/* Filter and Sort bar */}
+      {state.players.length > 0 && (
+        <div className="px-4 pb-3 flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
+            <Input
+              placeholder="이름/번호 (초성 가능)"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-8 bg-secondary border-border h-9 text-sm"
+            />
+          </div>
+          <Select value={sortType} onValueChange={(v) => setSortType(v as any)}>
+            <SelectTrigger className="w-[110px] bg-secondary border-border h-9 text-sm">
+              <div className="flex items-center gap-1.5">
+                <ArrowUpDown className="size-3.5 text-muted-foreground" />
+                <SelectValue />
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="number">번호순</SelectItem>
+              <SelectItem value="name">이름순</SelectItem>
+              <SelectItem value="skill">실력순</SelectItem>
+              <SelectItem value="position">주포지션</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
       {/* Player List */}
       <div className="flex-1 overflow-y-auto px-4">
         {state.players.length === 0 ? (
@@ -390,7 +465,7 @@ export function RosterManager() {
           </div>
         ) : (
           <div className="flex flex-col gap-2 pb-4">
-            {state.players.map((player) => (
+            {filteredAndSortedPlayers.map((player: Player) => (
               <div
                 key={player.id}
                 className="flex items-center gap-3 rounded-xl border border-border bg-card p-3 transition-colors"

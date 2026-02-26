@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useLineup } from "@/lib/lineup-context";
 import type { Player, Position, SkillLevel } from "@/lib/types";
 import { ALL_POSITIONS } from "@/lib/types";
@@ -23,13 +23,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Check, UserPlus } from "lucide-react";
+import { Check, UserPlus, Search, ArrowUpDown } from "lucide-react";
+import { getChoseong } from "es-hangul";
 
 function generateId() {
   return Math.random().toString(36).substring(2, 9);
 }
 
 const QUARTER_LABELS = ["1Q", "2Q", "3Q", "4Q"];
+
+type SortType = "name" | "number" | "position" | "skill";
 
 export function AttendanceManager() {
   const { state, dispatch } = useLineup();
@@ -44,10 +47,53 @@ export function AttendanceManager() {
     true,
   ]);
 
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortType, setSortType] = useState<SortType>("number");
+
   const attending = state.players.filter((p) => p.is_attending);
   const totalQ = [0, 1, 2, 3].map(
     (q) => state.players.filter((p) => p.is_attending && p.available_quarters[q]).length
   );
+
+  const filteredAndSortedPlayers = useMemo(() => {
+    let result = [...state.players];
+
+    // 1. Search (Choseong Support)
+    if (searchTerm) {
+      result = result.filter(p => {
+        const nameMatch = p.name.includes(searchTerm) || getChoseong(p.name).includes(searchTerm);
+        const numMatch = p.number?.toString().includes(searchTerm);
+        return nameMatch || numMatch;
+      });
+    }
+
+    // 2. Sort
+    result.sort((a, b) => {
+      // 용병은 항상 마지막
+      if (a.is_mercenary !== b.is_mercenary) {
+        return a.is_mercenary ? 1 : -1;
+      }
+
+      switch (sortType) {
+        case "name":
+          return a.name.localeCompare(b.name);
+        case "number":
+          const numA = a.number ?? 999;
+          const numB = b.number ?? 999;
+          return numA - numB;
+        case "position":
+          return a.main_pos.localeCompare(b.main_pos);
+        case "skill": {
+          const scoreMap: Record<SkillLevel, number> = { High: 3, Medium: 2, Low: 1 };
+          return scoreMap[b.skill_level] - scoreMap[a.skill_level];
+        }
+        default:
+          return 0;
+      }
+    });
+
+    return result;
+  }, [state.players, searchTerm, sortType]);
 
   function handleAddMercenary() {
     if (!mercName.trim()) return;
@@ -104,6 +150,33 @@ export function AttendanceManager() {
         </div>
       </div>
 
+      {/* Filter and Sort bar */}
+      <div className="px-4 pb-3 flex gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
+          <Input
+            placeholder="이름/번호 (초성 가능)"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-8 bg-secondary border-border h-9 text-sm"
+          />
+        </div>
+        <Select value={sortType} onValueChange={(v) => setSortType(v as SortType)}>
+          <SelectTrigger className="w-[110px] bg-secondary border-border h-9 text-sm">
+            <div className="flex items-center gap-1.5">
+              <ArrowUpDown className="size-3.5 text-muted-foreground" />
+              <SelectValue />
+            </div>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="number">번호순</SelectItem>
+            <SelectItem value="name">이름순</SelectItem>
+            <SelectItem value="skill">실력순</SelectItem>
+            <SelectItem value="position">주포지션</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
       {/* Quarter Summary */}
       <div className="mx-4 mb-3 flex gap-2">
         {QUARTER_LABELS.map((label, i) => (
@@ -121,7 +194,7 @@ export function AttendanceManager() {
       {/* Player List */}
       <div className="flex-1 overflow-y-auto px-4">
         <div className="flex flex-col gap-2 pb-4">
-          {state.players.map((player) => (
+          {filteredAndSortedPlayers.map((player) => (
             <div
               key={player.id}
               className={`rounded-xl border transition-colors ${player.is_attending
@@ -137,7 +210,7 @@ export function AttendanceManager() {
                 className="flex w-full items-center gap-3 p-3"
               >
                 <div
-                  className={`flex size-8 items-center justify-center rounded-lg text-xs font-bold transition-colors ${player.is_attending
+                  className={`flex size-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold transition-colors ${player.is_attending
                     ? "bg-primary text-primary-foreground"
                     : "bg-secondary text-muted-foreground"
                     }`}
