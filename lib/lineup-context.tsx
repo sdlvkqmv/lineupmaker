@@ -16,6 +16,7 @@ interface LineupState {
   quarterLineups: QuarterLineup[];
   currentStep: number; // 0: roster, 1: attendance, 2: formation/lineup, 3: pitch view
   selectedQuarter: number; // 0-3
+  eliteQuarter: number | null; // 0-3, or null
 }
 
 type LineupAction =
@@ -35,6 +36,7 @@ type LineupAction =
   | { type: "SET_QUARTER_LINEUPS"; lineups: QuarterLineup[] }
   | { type: "SET_STEP"; step: number }
   | { type: "SET_SELECTED_QUARTER"; quarter: number }
+  | { type: "SET_ELITE_QUARTER"; quarter: number | null }
   | { type: "LOAD_STATE"; state: LineupState }
   | {
     type: "SWAP_PLAYER";
@@ -55,6 +57,7 @@ const initialState: LineupState = {
   quarterLineups: [],
   currentStep: 0,
   selectedQuarter: 0,
+  eliteQuarter: null,
 };
 
 function getSkillScore(level: string): number {
@@ -94,7 +97,8 @@ function positionMatchScore(
 
 function generateLineups(
   players: Player[],
-  formation: FormationType
+  formation: FormationType,
+  eliteQuarter: number | null
 ): QuarterLineup[] {
   const formationPositions = FORMATIONS[formation];
   const quarters: QuarterLineup[] = [];
@@ -106,7 +110,7 @@ function generateLineups(
   const forcedGks = new Set<string>();
 
   for (let q = 0; q < 4; q++) {
-    const isEliteQuarter = q === 1; // 2Q is designated as Elite Quarter (정예 쿼터)
+    const isEliteQuarter = q === eliteQuarter;
     const available = attendingPlayers.filter((p) => p.available_quarters[q]);
 
     // 1. Shuffle initially to prevent bias
@@ -271,10 +275,12 @@ function lineupReducer(
     }
     case "SET_FORMATION":
       return { ...state, formation: action.formation };
+    case "SET_ELITE_QUARTER":
+      return { ...state, eliteQuarter: action.quarter };
     case "GENERATE_LINEUPS":
       return {
         ...state,
-        quarterLineups: generateLineups(state.players, state.formation),
+        quarterLineups: generateLineups(state.players, state.formation, state.eliteQuarter),
       };
     case "SET_QUARTER_LINEUPS":
       return { ...state, quarterLineups: action.lineups };

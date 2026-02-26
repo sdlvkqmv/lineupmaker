@@ -279,7 +279,7 @@ export function LineupView() {
                 }`}
             >
               <span className="text-sm font-bold">{label}</span>
-              {i === 1 && (
+              {i === state.eliteQuarter && (
                 <span className="text-[9px] font-medium opacity-80 -mt-0.5">
                   엘리트 쿼터
                 </span>
