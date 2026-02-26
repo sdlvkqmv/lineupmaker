@@ -308,8 +308,11 @@ export function RosterManager() {
       <div className="flex items-center justify-between px-4 py-3">
         <div>
           <h2 className="text-lg font-bold text-foreground">선수단 관리</h2>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-muted-foreground mt-0.5">
             {totalPlayers}명 등록{mercenaries > 0 ? ` (용병 ${mercenaries}명)` : ""}
+          </p>
+          <p className="text-[10px] text-primary/80 mt-1 font-medium bg-primary/10 rounded-md px-1.5 py-0.5 inline-block">
+            💡 선수 명단의 [상/중/하] 뱃지를 터치하면 즉시 실력을 수정할 수 있습니다.
           </p>
         </div>
         <div className="flex gap-2">
